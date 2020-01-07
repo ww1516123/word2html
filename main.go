@@ -14,6 +14,7 @@ import (
 )
 
 var filePath string
+var encoding string
 
 type metaInfo struct {
 	from        string
@@ -48,6 +49,7 @@ type docInfo struct {
 
 func main() {
 	flag.StringVar(&filePath, "f", "", "filePath")
+	flag.StringVar(&encoding, "e", "GBK", "encoding")
 	flag.Parse() //暂停获取参数
 	if filePath == "" {
 		fmt.Printf("Error: %s\n", "please input filePath")
@@ -109,8 +111,13 @@ func checkFileIsExist(filename string) bool {
 func write2file(docInfo *docInfo, filename string) {
 	if docInfo.bodyContent.contentCharset == "gb2312" {
 		docInfo.bodyContent.contentCharset = "GBK"
+
 	}
-	decoder := mahonia.NewDecoder(docInfo.bodyContent.contentCharset)
+	if encoding == ""{
+		encoding = docInfo.bodyContent.contentCharset
+	}
+
+	decoder := mahonia.NewDecoder(encoding)
 	decodeBytes, _ := base64.StdEncoding.DecodeString(docInfo.body)
 	var f *os.File
 	//如果文件存在
@@ -127,7 +134,9 @@ func write2file(docInfo *docInfo, filename string) {
 	html := decoder.ConvertString(string(decodeBytes))
 	//编码集
 	html = strings.Replace(html, "<html>", "<html><meta charset=\"UTF-8\">", 1)
+	// fmt.Printf(" the %v",docInfo)
 	for key, value := range docInfo.images {
+
 		html = strings.Replace(html, "src=\"cid:"+key+"\"", "src=\"data:"+value.imageMeta.contentType+";base64,"+value.imageContent+"\"", 1)
 	}
 	w.Write([]byte(html))
